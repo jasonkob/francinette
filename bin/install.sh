@@ -1,84 +1,73 @@
 #!/bin/bash
 
-cd "$HOME" || exit
+# Navigate to the home directory
+cd $HOME
 
+# Create a temporary folder
 mkdir temp_____
 
-cd temp_____ || exit
-rm -rf francinette
+# Navigate into the temporary folder
+cd temp_____
 
-# download github
+# Remove any previous francinette directory
+rm -r -fo francinette
+
+# Download francinette from GitHub
 git clone --recursive https://github.com/xicodomingues/francinette.git
 
-if [ "$(uname)" != "Darwin" ]; then
-	echo "Admin permissions needed to install C compilers, python, and upgrade current packages"
-	case $(lsb_release -is) in
-		"Ubuntu")
-			sudo apt update
-			sudo apt upgrade
-			sudo apt install gcc clang libpq-dev libbsd-dev libncurses-dev valgrind -y
-			sudo apt install python-dev python-pip -y
-			sudo apt install python-dev python-venv python-wheel -y
-			pip install wheel
-			;;
-		"Arch")
-			sudo pacman -Syu
-			sudo pacman -S gcc clang postgresql libbsd ncurses valgrind --noconfirm
-			sudo pacman -S python-pip --noconfirm
-			pip install wheel
-			;;
-	esac
-fi
+# Install compilers and tools for Windows using Chocolatey (choco)
+if ($env:OS -ne "Windows_NT") {
+    echo "Administrator permissions needed to install C compilers, Python, and update current packages"
+    Start-Process powershell -Verb runAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command "choco upgrade all; choco install mingw make -y; choco install python -y"'
+}
 
-cp -r francinette "$HOME"
+# Copy the francinette folder to the home directory
+Copy-Item -Recurse francinette "$HOME"
 
-cd "$HOME" || exit
-rm -rf temp_____
+# Clean up the temporary folder
+cd $HOME
+Remove-Item -Recurse -Force temp_____
 
-cd "$HOME"/francinette || exit
+# Navigate to the francinette directory
+cd "$HOME/francinette"
 
-# start a venv inside francinette
-if ! python -m venv venv ; then
-	echo "Please make sure than you can create a python virtual environment"
-	echo 'Contact me if you have no idea how to proceed (fsoares- on slack)'
-	exit 1
-fi
+# Set up a Python virtual environment
+if (!(python -m venv venv)) {
+    echo "Please ensure that you can create a Python virtual environment."
+    echo "Contact me if you have no idea how to proceed (fsoares- on Slack)"
+    exit 1
+}
 
-# activate venv
-. venv/bin/activate
+# Activate the virtual environment
+. ./venv/Scripts/Activate.ps1
 
-# install requirements
-if ! pip install -r requirements.txt ; then
-	echo 'Problem launching the installer. Contact me (fsoares- on slack)'
-	exit 1
-fi
+# Install Python requirements
+if (!(pip install -r requirements.txt)) {
+    echo "Problem launching the installer. Contact me (fsoares- on Slack)"
+    exit 1
+}
 
-RC_FILE="$HOME/.zshrc"
+# Set up the PowerShell profile for aliases
+$profilePath = "$HOME\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
 
-if [ "$(uname)" != "Darwin" ]; then
-	RC_FILE="$HOME/.bashrc"
-	if [[ -f "$HOME/.zshrc" ]]; then
-		RC_FILE="$HOME/.zshrc"
-	fi
-fi
+if (!(Test-Path $profilePath)) {
+    New-Item -Path $profilePath -ItemType File -Force
+}
 
-echo "try to add alias in file: $RC_FILE"
+# Add francinette alias to the profile
+if (-not (Get-Content $profilePath | Select-String "francinette=")) {
+    Add-Content $profilePath "`nalias francinette='$HOME/francinette/tester.ps1'"
+}
 
-# set up the alias
-if ! grep "francinette=" "$RC_FILE" &> /dev/null; then
-	echo "francinette alias not present"
-	printf "\nalias francinette=%s/francinette/tester.sh\n" "$HOME" >> "$RC_FILE"
-fi
+# Add paco alias to the profile
+if (-not (Get-Content $profilePath | Select-String "paco=")) {
+    Add-Content $profilePath "`nalias paco='$HOME/francinette/tester.ps1'"
+}
 
-if ! grep "paco=" "$RC_FILE" &> /dev/null; then
-	echo "Short alias not present. Adding it"
-	printf "\nalias paco=%s/francinette/tester.sh\n" "$HOME" >> "$RC_FILE"
-fi
+# Load the updated profile
+& $profilePath
 
-# print help
-"$HOME"/francinette/tester.sh --help
+# Print help for francinette
+& "$HOME/francinette/tester.ps1" --help
 
-# automatically replace current shell with new one.
-exec "$SHELL"
-
-printf "\033[33m... and don't forget, \033[1;37mpaco\033[0;33m is not a replacement for your own tests! \033[0m\n"
+Write-Host "... and don't forget, paco is not a replacement for your own tests!" -ForegroundColor Yellow
