@@ -17,15 +17,15 @@ if [ "$(uname)" != "Darwin" ]; then
 			sudo apt update
 			sudo apt upgrade
 			sudo apt install gcc clang libpq-dev libbsd-dev libncurses-dev valgrind -y
-			sudo apt install python-dev python3-pip -y
-			sudo apt install python3-dev python3-venv python3-wheel -y
-			pip3 install wheel
+			sudo apt install python-dev python-pip -y
+			sudo apt install python-dev python-venv python-wheel -y
+			pip install wheel
 			;;
 		"Arch")
 			sudo pacman -Syu
 			sudo pacman -S gcc clang postgresql libbsd ncurses valgrind --noconfirm
 			sudo pacman -S python-pip --noconfirm
-			pip3 install wheel
+			pip install wheel
 			;;
 	esac
 fi
@@ -38,7 +38,7 @@ rm -rf temp_____
 cd "$HOME"/francinette || exit
 
 # start a venv inside francinette
-if ! python3 -m venv venv ; then
+if ! python -m venv venv ; then
 	echo "Please make sure than you can create a python virtual environment"
 	echo 'Contact me if you have no idea how to proceed (fsoares- on slack)'
 	exit 1
@@ -48,7 +48,7 @@ fi
 . venv/bin/activate
 
 # install requirements
-if ! pip3 install -r requirements.txt ; then
+if ! pip install -r requirements.txt ; then
 	echo 'Problem launching the installer. Contact me (fsoares- on slack)'
 	exit 1
 fi
